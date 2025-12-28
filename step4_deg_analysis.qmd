@@ -1,0 +1,297 @@
+# Differential Expression Analysis of RNA-seq Data
+```{r}
+# load libraries
+library(BiocManager)
+library(DESeq2)
+library(tidyverse)
+library(RColorBrewer)
+library(pheatmap)
+library(DEGreport)
+library(tximport)
+library(ggplot2)
+library(ggrepel)
+```
+
+## Gene-level differential expression analysis
+https://hbctraining.github.io/Intro-to-DGE/lessons/01c_RNAseq_count_distribution.html
+
+```{r}
+# check the data
+# data <- read.delim("intermediate/mouse_counts_matrix.tsv", header = TRUE)
+head(data)
+```
+
+```{r}
+# plot histogram of raw counts for BV2_1 sample
+ggplot(data) +
+  geom_histogram(aes(x = BV2_1_quant), stat = "bin", bins = 200) +
+  xlab("Raw expression counts") +
+  ylab("Number of genes")
+```
+
+```{r}
+# transform the x axis to log scale
+ggplot(data) +
+  geom_histogram(aes(x = BV2_1_quant), stat = "bin", bins = 100) +
+  scale_x_log10() + # log scale for better visualization
+  labs(x = "log10 Raw expression counts",
+       y = "Number of genes")
+```
+
+```{r}
+# melt the data for all samples
+library(reshape2)
+data_melted <- melt(data)
+head(data_melted)
+
+# density plot of all samples
+ggplot(data_melted, aes(x = value, color = variable)) +
+  geom_density() +
+  scale_x_log10() + # log scale for better visualization
+  labs(x = "log10 Raw expression counts",
+       y = "Density")
+```
+
+```{r}
+mean_bv2_counts <- apply(data[,1:4], 1, mean)        
+#The second argument '1' of 'apply' function indicates the function being applied to rows. Use '2' if applied to columns 
+variance_bv2_counts <- apply(data[,1:4], 1, var)
+df <- data.frame(mean_bv2_counts, variance_bv2_counts)
+
+ggplot(df) +
+        geom_point(aes(x=mean_bv2_counts, y=variance_bv2_counts)) + 
+        scale_y_log10(limits = c(1,1e9)) +
+        scale_x_log10(limits = c(1,1e9)) +
+        geom_abline(intercept = 0, slope = 1, color="red")
+```
+
+## Count normalization with DESeq2
+https://hbctraining.github.io/Intro-to-DGE/lessons/02_DGE_count_normalization.html
+```{r}
+# check the metadata
+# meta <- read.delim("intermediate/mouse_sample_metadata.tsv", header = TRUE)
+meta
+```
+
+```{r}
+# to get BV2 (numerator) vs mg_shaking (denominator), relevel factor so mg_shaking is the reference
+meta <- meta |>
+  mutate(sampletype = relevel(factor(sampletype), ref = "mg_shaking"))
+meta
+```
+
+```{r}
+### Check that sample names match in both files
+all(colnames(txi$counts) %in% rownames(meta))
+all(colnames(data) == rownames(meta))
+```
+
+```{r}
+## Create DESeq2Dataset object
+dds <- DESeqDataSetFromTximport(txi, colData = meta, design = ~ sampletype)
+View(counts(dds))
+```
+
+```{r}
+dds <- estimateSizeFactors(dds)
+sizeFactors(dds)
+```
+
+```{r}
+normalized_counts <- counts(dds, normalized=TRUE)
+head(normalized_counts)
+```
+
+```{r}
+# write normalized counts to a txt file
+write.table(normalized_counts, file="intermediate/normalized_counts.txt", sep="\t", quote=F, col.names=NA)
+```
+
+## QC methods for DE analysis using DESeq2
+https://hbctraining.github.io/Intro-to-DGE/lessons/03_DGE_QC_analysis.html
+```{r}
+### Transform counts for data visualization
+dds_vst <- vst(dds, blind=TRUE)
+dds_mat <- assay(dds_vst)
+pca <- prcomp(t(dds_mat))
+
+# Create data frame with metadata and PC values for input to ggplot
+df <- cbind(meta, pca$x)
+ggplot(df) + geom_point(aes(x=PC1, y=PC2, color = sampletype))
+```
+
+```{r}
+### Compute pairwise correlation values
+dds_cor <- cor(dds_mat)    ## cor() is a base R function
+
+## check the output of cor(), make note of the row names and column names
+head(dds_cor)
+```
+
+```{r}
+### Plot heatmap using the correlation matrix and the metadata object
+pheatmap(dds_cor, annotation = meta)
+```
+
+## Gene-level differential expression analysis with DESeq2
+https://hbctraining.github.io/Intro-to-DGE/lessons/04a_design_formulas.html
+```{r}
+## Run analysis
+dds <- DESeq(dds)
+```
+
+https://hbctraining.github.io/Intro-to-DGE/lessons/04b_DGE_DESeq2_analysis.html
+```{r}
+## Total number of raw counts per sample
+colSums(counts(dds))
+```
+
+```{r}
+## Total number of normalized counts per sample
+colSums(counts(dds, normalized=T))
+```
+
+```{r}
+plotDispEsts(dds)
+```
+
+## Exploring DESeq2 results: Wald test
+https://hbctraining.github.io/Intro-to-DGE/lessons/05b_wald_test_results.html
+```{r}
+## Define contrasts
+# contrast <- c("sampletype", "treatment", "control")
+contrast_bv2_vs_mg <- c("sampletype", "BV2", "mg_shaking")
+contrast_bv2_vs_mg
+```
+
+```{r}
+## Extract results 
+res_table <- results(dds, contrast=contrast_bv2_vs_mg, alpha = 0.05)
+```
+
+```{r}
+class(res_table)
+head(res_table)
+```
+
+```{r}
+# Get information on each column in results
+mcols(res_table, use.names=T)
+```
+
+```{r}
+# see how many genes have zero expression
+res_table[which(res_table$baseMean == 0),] %>%
+    nrow()
+```
+
+```{r}
+# see how many genes have an extreme outlier
+res_table[which(is.na(res_table$pvalue) & 
+                    is.na(res_table$padj) &
+                    res_table$baseMean > 0),] %>% 
+  nrow()
+```
+
+```{r}
+# plot log10(baseMean) vs -log10(padj) with ggplot2
+ggplot(res_table, aes(x = baseMean, y = -log10(padj))) +
+  geom_point(alpha = 0.6, size = 1) +
+  scale_x_log10() +
+  labs(x = "log10(baseMean)",
+       y = "-log10(padj)"
+    )
+```
+
+```{r}
+# see how many genes are below the low mean threshold
+res_table[which(!is.na(res_table$pvalue) & 
+                    is.na(res_table$padj) & 
+                    res_table$baseMean > 0),] %>% 
+  nrow()
+```
+
+```{r}
+# summary of results
+summary(res_table)
+```
+
+```{r}
+## Save the unshrunken results to compare
+res_table_unshrunken <- res_table
+```
+
+```{r}
+# get coefficient name from all column names
+resultsNames(dds)
+```
+
+```{r}
+# Apply fold change shrinkage
+res_table_shrunken <- lfcShrink(dds, 
+    coef="sampletype_BV2_vs_mg_shaking", 
+    type="apeglm"
+    )
+head(res_table_shrunken)
+```
+
+```{r}
+# df of log2 fold changes
+df_lfc <- data.frame(
+  lfc_unshrunken = res_table_unshrunken$log2FoldChange,
+  lfc_shrunken = res_table_shrunken$log2FoldChange
+)
+head(df_lfc)
+```
+
+```{r}
+# density plot of unshrunken vs shrunken log2 fold changes
+ggplot(df_lfc) +
+  geom_density(aes(x = lfc_unshrunken, color = "unshrunken"), size = 0.5) +
+  geom_density(aes(x = lfc_shrunken, color = "shrunken"), size = 0.5) +
+  labs(x = "Log2 Fold Change",
+       y = "Density") #+
+#   scale_color_manual(name = "Legend", values = c("Unshrunken" = "blue", "Shrunken" = "red")
+  #)
+```
+
+```{r}
+# MA plot using unshrunken fold changes
+plotMA(res_table_unshrunken)
+```
+
+```{r}
+# MA plot using shrunken fold changes
+plotMA(res_table_shrunken)
+```
+
+## Summarizing results from the Wald test
+https://hbctraining.github.io/Intro-to-DGE/lessons/05c_summarizing_results.html
+
+```{r}
+## Summarize results
+summary(res_table_shrunken, alpha = 0.05)
+```
+
+```{r}
+# Create a tibble of results
+res_table_shrunken_tb <- res_table_shrunken %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+head(res_table_shrunken_tb)
+```
+
+```{r}
+### Set thresholds
+padj.cutoff <- 0.05
+
+# Subset the tibble to keep only significant genes
+sig_tb <- res_table_shrunken_tb %>%
+        dplyr::filter(padj < padj.cutoff)
+
+# Take a quick look at this tibble
+head(sig_tb)
+nrow(sig_tb)
+```
+

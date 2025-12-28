@@ -1,0 +1,91 @@
+# Introduction to Differential Gene Expression Analysis
+https://hbctraining.github.io/Intro-to-DGE/
+
+Install required packages if not already installed
+```{r}
+if (!requireNamespace("BiocManager")) {
+  install.packages("BiocManager")
+}
+if (!requireNamespace("tidyverse")) {
+  install.packages("tidyverse")
+}
+if (!requireNamespace("RColorBrewer")) {
+  install.packages("RColorBrewer")
+}
+if (!requireNamespace("pheatmap")) {
+  install.packages("pheatmap")
+}
+if (!requireNamespace("ggrepel")) {
+  install.packages("ggrepel")
+}
+if (!requireNamespace("cowplot")) {
+  install.packages("cowplot")
+}
+```
+
+Install required Bioconductor packages if not already installed
+```{r}
+library(BiocManager)
+
+if (!requireNamespace("DESeq2")) {
+  BiocManager::install("DESeq2")
+}
+if (!requireNamespace("clusterProfiler")) {
+  BiocManager::install("clusterProfiler")
+}
+if (!requireNamespace("DOSE")) {
+  BiocManager::install("DOSE")
+}
+if (!requireNamespace("org.Hs.eg.db")) {
+  BiocManager::install("org.Hs.eg.db")
+}
+if (!requireNamespace("pathview")) {
+  BiocManager::install("pathview")
+}
+if (!requireNamespace("DEGreport")) {
+  BiocManager::install("DEGreport")
+}
+if (!requireNamespace("tximport")) {
+  BiocManager::install("tximport")
+}
+if (!requireNamespace("AnnotationHub")) {
+  BiocManager::install("AnnotationHub")
+}
+if (!requireNamespace("ensembldb")) {
+  BiocManager::install("ensembldb")
+}
+if (!requireNamespace("apeglm")) {
+  BiocManager::install("apeglm")
+}
+```
+
+Since we will be studying mouse data, install the mouse annotation database
+```{r}
+if (!requireNamespace("org.Mm.eg.db")) {
+  BiocManager::install("org.Mm.eg.db")
+}
+```
+
+Load the required libraries
+```{r}
+library(DESeq2)
+library(tidyverse)
+library(RColorBrewer)
+library(pheatmap)
+library(ggrepel)
+library(cowplot)
+library(clusterProfiler)
+library(DEGreport)
+library(org.Mm.eg.db)
+library(DOSE)
+library(pathview)
+library(tximport)
+library(AnnotationHub)
+library(ensembldb)
+library(apeglm)
+```
+
+Show session information
+```{r}
+sessionInfo()
+```

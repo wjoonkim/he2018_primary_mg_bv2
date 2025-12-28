@@ -1,0 +1,106 @@
+# Set up R environment and import salmon quant files
+
+Install tidyverse for data analysis if not already installed
+
+```{r}
+if (!requireNamespace("tidyverse")) {
+  install.packages("tidyverse")
+}
+```
+
+Install duckplyr for faster file reading (drop-in replacement for dplyr)
+
+```{r}
+if (!requireNamespace("duckplyr")) {
+  install.packages("duckplyr")
+}
+```
+
+Install other required packages for DESeq2
+
+```{r}
+if (!requireNamespace("BiocManager")) {
+  install.packages("BiocManager")
+}
+```
+
+```{r}
+if (!requireNamespace("pheatmap")) {
+  install.packages("pheatmap")
+}
+```
+
+```{r}
+if (!requireNamespace("ggrepel")) {
+  install.packages("ggrepel")
+}
+```
+
+```{r}
+if (!requireNamespace("cowplot")) {
+  install.packages("cowplot")
+}
+```
+
+Install Bioconductor packages for DESeq2 analysis
+
+```{r}
+if (!requireNamespace("DESeq2")) {
+  BiocManager::install("DESeq2")
+}
+```
+
+Import installed packages
+
+```{r}
+library(duckplyr) 
+library(tidyverse) # readr, ggplot2, tidyr, tibble
+```
+
+Import salmon quants files
+
+```{r}
+# bv2 cell line
+BV2_1_salmon <- read_tsv("data/BV2_1_quant/quant.sf")
+BV2_2_salmon <- read_tsv("data/BV2_2_quant/quant.sf")
+BV2_3_salmon <- read_tsv("data/BV2_3_quant/quant.sf")
+BV2_4_salmon <- read_tsv("data/BV2_4_quant/quant.sf")
+
+# primary microglia
+mg_shaking_1_salmon <- read_tsv("data/mg_shaking_1_quant/quant.sf")
+mg_shaking_2_salmon <- read_tsv("data/mg_shaking_2_quant/quant.sf")
+mg_shaking_3_salmon <- read_tsv("data/mg_shaking_3_quant/quant.sf")
+mg_shaking_4_salmon <- read_tsv("data/mg_shaking_4_quant/quant.sf")
+```
+
+View imported data
+
+```{r}
+head(BV2_1_salmon)
+```
+
+Merge salmon quant files into a single data frame
+
+```{r}
+merged_bv2_mg_salmon_tpm_df <- BV2_1_salmon %>%
+  select(Name, BV2_1_TPM = TPM) %>%
+  inner_join(BV2_2_salmon %>% select(Name, BV2_2_TPM = TPM), by = "Name") %>%
+  inner_join(BV2_3_salmon %>% select(Name, BV2_3_TPM = TPM), by = "Name") %>%
+  inner_join(BV2_4_salmon %>% select(Name, BV2_4_TPM = TPM), by = "Name") %>%
+  inner_join(mg_shaking_1_salmon %>% select(Name, mg_shaking_1_TPM = TPM), by = "Name") %>%
+  inner_join(mg_shaking_2_salmon %>% select(Name, mg_shaking_2_TPM = TPM), by = "Name") %>%
+  inner_join(mg_shaking_3_salmon %>% select(Name, mg_shaking_3_TPM = TPM), by = "Name") %>%
+  inner_join(mg_shaking_4_salmon %>% select(Name, mg_shaking_4_TPM = TPM), by = "Name")
+```
+
+View merged data
+
+```{r}
+head(merged_bv2_mg_salmon_tpm_df)
+```
+
+Save merged data to a TSV file
+
+```{r}
+write_tsv(merged_bv2_mg_salmon_tpm_df, "results/merged_bv2_mg_salmon_tpm.tsv")
+```

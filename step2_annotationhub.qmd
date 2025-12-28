@@ -1,0 +1,98 @@
+# Create annotation file using AnnotationHub
+
+https://hbctraining.github.io/Intro-to-DGE/lessons/genomic_annotation.html
+
+Since hbctraining uses human data, we need to create a mouse annotation file
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# Load libraries
+library(AnnotationHub)
+library(ensembldb)
+
+# Connect to AnnotationHub
+ah <- AnnotationHub()
+```
+
+```{r}
+# Explore the AnnotationHub object
+ah
+```
+
+```{r}
+# Explore species information available
+unique(ah$species)
+length(unique(ah$species))
+```
+
+```{r}
+# Explore the types of Data Objects available
+unique(ah$rdataclass)
+```
+
+```{r}
+# Explore the Data Providers
+unique(ah$dataprovider)
+```
+
+```{r}
+# search for mouse in the AnnotationHub
+mouse_ah <- query(ah, "mouse")
+mouse_ah
+```
+
+```{r}
+# Query AnnotationHub for mouse EnsDb
+mouse_ens <- query(ah, c("Mus musculus", "EnsDb"))
+```
+
+```{r}
+# see the latest versions
+tail(mouse_ens)
+```
+
+```{r}
+# Extract the latest version of the mouse EnsDb
+mouse_ens <- mouse_ens[["AH119358"]]
+```
+
+```{r}
+# explore the EnsDb object
+mouse_ens
+columns(mouse_ens)
+```
+
+```{r}
+# Create a transcript dataframe
+txdb <- transcripts(mouse_ens, return.type = "data.frame") %>%
+   dplyr::select(tx_id, gene_id)
+# txdb <- txdb[grep("ENST", txdb$tx_id),]
+head(txdb)
+```
+
+```{r}
+# Create a gene-level dataframe
+genedb <- genes(mouse_ens, return.type = "data.frame")  %>%
+   dplyr::select(gene_id, gene_name)
+head(genedb)
+```
+
+```{r}
+# Merge the two dataframes together
+annotations <- inner_join(txdb, genedb)
+head(annotations)
+```
+
+```{r}
+# Save the annotations dataframe
+if (!file.exists("intermediate/mouse_annotations.tsv")) {
+  write_tsv(annotations, "intermediate/mouse_annotations.tsv")
+  message("File saved to intermediate/mouse_annotations.tsv")
+} else {
+  message("File already exists. Skipping write.")
+}
+```
+What we did above is sufficient for DEG up to volcano plots.

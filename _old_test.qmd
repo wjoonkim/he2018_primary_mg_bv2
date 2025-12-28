@@ -1,0 +1,11 @@
+This is a code chunk in R.
+
+```{r}
+print("Hello, world!")
+```
+
+A simple figure.
+
+```{r}
+plot(cars)
+```
