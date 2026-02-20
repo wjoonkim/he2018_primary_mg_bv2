@@ -1,0 +1,1 @@
+SVGs are not committed to git to save space

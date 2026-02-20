@@ -1,4 +1,18 @@
+# R and RStudio
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+.httr-oauth
+
+# System files
+.DS_Store
+*/.DS_Store
+
+# Temporary files
+*.tmp
+*~
+
+# old files
+_old_*.qmd
+_old_*.html

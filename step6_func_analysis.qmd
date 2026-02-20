@@ -22,6 +22,18 @@ library(apeglm)
 What we did in `step2_annotationhub.qmd` was create the ens2gene data frame from AnnotationHub.
 
 However, for functional analysis, we also need Entrez IDs. So let's create a new data frame with Ensembl Gene IDs, Gene Symbols, and Entrez IDs.
+
+```{r}
+# Load objects from previous steps
+load("intermediate/step5_objects.RData")  # res_table_shrunken_label_gene_tb, ens2gene
+
+# Load mouse_ens from step2
+library(AnnotationHub)
+library(ensembldb)
+ah <- AnnotationHub()
+mouse_ens <- query(ah, c("Mus musculus", "EnsDb"))[["AH119358"]]
+```
+
 ```{r}
 # Create a gene-level dataframe from mouse_ens (step2_annotationhub.qmd)
 annotations_ahb <- genes(mouse_ens, return.type = "data.frame")  %>%

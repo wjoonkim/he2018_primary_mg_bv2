@@ -12,18 +12,99 @@ library(ggplot2)
 library(ggrepel)
 ```
 
+## Set up and overview for gene-level differential expression analysis
+https://hbctraining.github.io/Intro-to-DGE/lessons/01b_DGE_setup_and_overview.html
+
+```{r}
+## List all directories containing data  
+samples <- list.files(path = "./data", full.names = T, pattern="quant")
+
+## Obtain a vector of all filenames including the path
+files <- file.path(samples, "quant.sf")
+
+## Since all quant files have the same name it is useful to have names for each element
+names(files) <- str_replace(samples, "./data/", "") %>% 
+                str_replace(".salmon", "")
+```
+
+```{r}
+# Load the annotation table for GrCh38
+tx2gene <- read.delim("intermediate/mouse_annotations.tsv", header = TRUE)
+head(tx2gene)
+```
+
+```{r}
+# import a single quant file to check the columns
+salmon_example <- read_tsv(files[1])
+head(salmon_example)
+tail(salmon_example)
+```
+
+```{r}
+# Run tximport
+txi <- tximport(files, type="salmon", tx2gene=tx2gene[,c("tx_id", "gene_id")], 
+                countsFromAbundance="lengthScaledTPM", ignoreTxVersion=TRUE)
+```
+
+```{r}
+# see what elements are in the txi object
+attributes(txi)
+```
+
+```{r}
+# see the first few rows of the counts matrix
+head(txi$counts)
+```
+
+```{r}
+# Write the counts to an object
+count_data <- txi$counts %>% 
+  round() %>% 
+  data.frame()
+head(count_data)
+```
+
+```{r}
+# Save the counts matrix to a TSV file
+if (!file.exists("intermediate/mouse_counts_matrix.tsv")) {
+  write.table(count_data, "intermediate/mouse_counts_matrix.tsv", row.names = TRUE,
+              col.names = NA, sep="\t", quote=FALSE)
+  message("File saved to intermediate/mouse_counts_matrix.tsv")
+} else {
+  message("File already exists. Skipping write.")
+}
+```
+
+```{r}
+## Create a sampletable/metadata
+sampletype <- factor(c(rep("BV2", 4), rep("mg_shaking", 4)))
+meta <- data.frame(sampletype, row.names = colnames(txi$counts))
+meta
+```
+
+```{r}
+# # Save the metadata to a TSV file
+# if (!file.exists("intermediate/mouse_sample_metadata.tsv")) {
+#   write.table(meta, "intermediate/mouse_sample_metadata.tsv", 
+#             sep="\t", quote=FALSE, row.names=TRUE, col.names=NA)
+#   message("File saved to intermediate/mouse_sample_metadata.tsv")
+# } else {
+#   message("File already exists. Skipping write.")
+# }
+```
+
 ## Gene-level differential expression analysis
 https://hbctraining.github.io/Intro-to-DGE/lessons/01c_RNAseq_count_distribution.html
 
 ```{r}
-# check the data
-# data <- read.delim("intermediate/mouse_counts_matrix.tsv", header = TRUE)
-head(data)
+# check the count_data
+# count_data <- read.delim("intermediate/mouse_counts_matrix.tsv", header = TRUE)
+head(count_data)
 ```
 
 ```{r}
 # plot histogram of raw counts for BV2_1 sample
-ggplot(data) +
+ggplot(count_data) +
   geom_histogram(aes(x = BV2_1_quant), stat = "bin", bins = 200) +
   xlab("Raw expression counts") +
   ylab("Number of genes")
@@ -31,7 +112,7 @@ ggplot(data) +
 
 ```{r}
 # transform the x axis to log scale
-ggplot(data) +
+ggplot(count_data) +
   geom_histogram(aes(x = BV2_1_quant), stat = "bin", bins = 100) +
   scale_x_log10() + # log scale for better visualization
   labs(x = "log10 Raw expression counts",
@@ -39,13 +120,13 @@ ggplot(data) +
 ```
 
 ```{r}
-# melt the data for all samples
+# melt the count_data for all samples
 library(reshape2)
-data_melted <- melt(data)
-head(data_melted)
+count_data_melted <- melt(count_data)
+head(count_data_melted)
 
 # density plot of all samples
-ggplot(data_melted, aes(x = value, color = variable)) +
+ggplot(count_data_melted, aes(x = value, color = variable)) +
   geom_density() +
   scale_x_log10() + # log scale for better visualization
   labs(x = "log10 Raw expression counts",
@@ -53,9 +134,9 @@ ggplot(data_melted, aes(x = value, color = variable)) +
 ```
 
 ```{r}
-mean_bv2_counts <- apply(data[,1:4], 1, mean)        
+mean_bv2_counts <- apply(count_data[,1:4], 1, mean)        
 #The second argument '1' of 'apply' function indicates the function being applied to rows. Use '2' if applied to columns 
-variance_bv2_counts <- apply(data[,1:4], 1, var)
+variance_bv2_counts <- apply(count_data[,1:4], 1, var)
 df <- data.frame(mean_bv2_counts, variance_bv2_counts)
 
 ggplot(df) +
@@ -83,13 +164,13 @@ meta
 ```{r}
 ### Check that sample names match in both files
 all(colnames(txi$counts) %in% rownames(meta))
-all(colnames(data) == rownames(meta))
+all(colnames(count_data) == rownames(meta))
 ```
 
 ```{r}
 ## Create DESeq2Dataset object
 dds <- DESeqDataSetFromTximport(txi, colData = meta, design = ~ sampletype)
-View(counts(dds))
+head(counts(dds))
 ```
 
 ```{r}
@@ -295,3 +376,7 @@ head(sig_tb)
 nrow(sig_tb)
 ```
 
+```{r}
+# Save key objects for later use
+save(meta, dds, res_table_shrunken_tb, sig_tb, file = "intermediate/deg_objects.RData")
+```

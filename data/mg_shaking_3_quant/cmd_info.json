@@ -1,0 +1,10 @@
+{
+    "salmon_version": "1.10.3",
+    "index": "reference/mus_musculus_index",
+    "libType": "A",
+    "mates1": "data/fastq/mg_shaking_3/SRR6047174_1.fastq",
+    "mates2": "data/fastq/mg_shaking_3/SRR6047174_2.fastq",
+    "threads": "8",
+    "output": "quants/mg_shaking_3_quant",
+    "auxDir": "aux_info"
+}

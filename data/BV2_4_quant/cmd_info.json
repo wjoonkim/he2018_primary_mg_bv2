@@ -1,0 +1,10 @@
+{
+    "salmon_version": "1.10.3",
+    "index": "reference/mus_musculus_index",
+    "libType": "A",
+    "mates1": "data/fastq/BV2_4/SRR6047165_1.fastq",
+    "mates2": "data/fastq/BV2_4/SRR6047165_2.fastq",
+    "threads": "8",
+    "output": "quants/BV2_4_quant",
+    "auxDir": "aux_info"
+}
