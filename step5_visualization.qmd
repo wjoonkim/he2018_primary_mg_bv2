@@ -80,6 +80,20 @@ ggplot(d_axl, aes(x = sampletype, y = count, color = sampletype)) +
 ```
 
 ```{r}
+# the code block above only creates the plot in the R session, but doesn't save it to a file. To save it, we need to assign the plot to an object and then use ggsave() to export it.
+
+# Create the plot object
+p_axl <- ggplot(d_axl, aes(x = sampletype, y = count, color = sampletype)) + 
+    geom_point(position=position_jitter(w = 0.1,h = 0)) +
+    ggtitle("Axl") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+# Export to PNG and SVG
+ggsave("plots/plot12_axl_norm_counts.png", plot = p_axl, width = 5, height = 4)
+ggsave("plots/plot12_axl_norm_counts.svg", plot = p_axl, width = 5, height = 4)
+```
+
+```{r}
 # check significant results table
 head(sig_tb)
 # check normalized counts table
@@ -115,6 +129,22 @@ pheatmap(norm_sig_tb[2:9],
     # fontsize_row = 10, 
     # height = 20
     )
+```
+
+```{r}
+sig_heatmap <- pheatmap(norm_sig_tb[2:9], 
+    color = heat_colors, 
+    cluster_rows = T, 
+    show_rownames = F,
+    annotation = meta, 
+    border_color = NA, 
+    fontsize = 10, 
+    scale = "row", 
+    )
+
+# Save the heatmap to a file
+ggsave("plots/plot13_sig_genes_heatmap.png", plot = sig_heatmap, width = 6, height = 8)
+ggsave("plots/plot13_sig_genes_heatmap.svg", plot = sig_heatmap, width = 6, height = 8)
 ```
 
 ```{r}

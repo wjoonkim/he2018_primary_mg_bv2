@@ -133,6 +133,12 @@ dotplot(ego, showCategory=15)
 ```
 
 ```{r}
+p_dot_ego <- dotplot(ego, showCategory=15)
+ggsave("plots/plot15_GO_dotplot.png", plot = p_dot_ego, width = 7, height = 7)
+ggsave("plots/plot15_GO_dotplot.svg", plot = p_dot_ego, width = 7, height = 7)
+```
+
+```{r}
 ## Add similarity matrix to the termsim slot of enrichment result
 ego <- enrichplot::pairwise_termsim(ego)
 ```
@@ -167,6 +173,16 @@ cnetplot(ego,
          foldChange=OE_foldchanges, 
          showCategory = 1, 
          vertex.label.font=6)
+```
+
+```{r}
+p_cnet_ego <- cnetplot(ego, 
+         categorySize="pvalue", 
+         foldChange=OE_foldchanges, 
+         showCategory = 1, 
+         vertex.label.font=6)
+ggsave("plots/plot18_cnet_1cat_lfc.png", plot = p_cnet_ego, width = 7, height = 7)
+ggsave("plots/plot18_cnet_1cat_lfc.svg", plot = p_cnet_ego, width = 7, height = 7)
 ```
 
 ## https://hbctraining.github.io/Intro-to-DGE/lessons/11_FA_functional_class_scoring.html
@@ -229,14 +245,23 @@ library(enrichplot)
 ```
 
 ```{r}
+# upsetplot is an alternative to cnetplot for visualizing the complex association between genes and gene sets. It emphasizes the gene overlapping among different gene sets.
 upsetplot(ego)
 ```
 
 ```{r}
+# For GSEA result, it will plot the fold change distributions of different categories (e.g. unique to pathway, overlaps among different pathways).
 upsetplot(gseaKEGG)
 ```
 
 ```{r}
 ridgeplot(gseaKEGG, showCategory=15)
+```
+
+```{r}
+# ridgeplot will visualize expression distributions of core enriched genes for GSEA enriched categories. It helps users to interpret up/down-regulated pathways.
+p_ridge_kegg <- ridgeplot(gseaKEGG, showCategory=15)
+ggsave("plots/plot22_ridge_kegg.png", plot = p_ridge_kegg, width = 7, height = 7)
+ggsave("plots/plot22_ridge_kegg.svg", plot = p_ridge_kegg, width = 7, height = 7)
 ```
 
