@@ -16,3 +16,4 @@
 # old files
 _old_*.qmd
 _old_*.html
+_old_*/
