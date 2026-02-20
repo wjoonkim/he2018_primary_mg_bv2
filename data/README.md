@@ -1,0 +1,1 @@
+`quant.sf` files (salmon quantification files) are not committed to avoid large files and data ownership issues.
